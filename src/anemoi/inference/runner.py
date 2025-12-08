@@ -168,6 +168,7 @@ class Runner(Context):
         self.preload_checkpoint = preload_checkpoint
         self.preload_buffer_size = preload_buffer_size
 
+
         if self.verbosity > 2:
             logging.basicConfig(level=logging.DEBUG)
             for logger_name in logging.root.manager.loggerDict:
@@ -595,6 +596,7 @@ class Runner(Context):
 
             LOG.info("Loading checkpoint: %s/s", bytes_to_human(size / t.elapsed))
 
+            model.statistics_tendencies = None
             model.runner = self
             return model
 
