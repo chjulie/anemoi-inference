@@ -56,7 +56,7 @@ class Input(ABC):
             The purpose of the input (e.g., 'forcings', 'constants'). Used for debugging and logging.
         """
         self.context = context
-        self.checkpoint = context.checkpoint
+        self.checkpoint = context['checkpoint']
         self._pre_processor_confs = pre_processors or []
 
         if variables is None:
