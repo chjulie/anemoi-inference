@@ -13,6 +13,7 @@ import logging
 import os
 from datetime import datetime, timedelta
 from typing import Any
+from typing import Mapping
 from typing import TypeVar
 
 from earthkit.data.utils.dates import to_datetime
@@ -39,9 +40,17 @@ class Configuration(BaseModel):
     @field_validator("date", mode="before")
     @classmethod
     def to_datetime(cls, date: str | int | datetime | dict[str, Any] | None) -> list | None:
-        if isinstance(date, datetime):
+        if date is None:
+            return None
+
+        if isinstance(date, DictConfig):
+            date = OmegaConf.to_container(date, resolve=True)
+
+        if isinstance(date, (str, int)):
             return [to_datetime(date)]
-        elif isinstance(date, dict):
+        if isinstance(date, datetime):
+            return [date]
+        if isinstance(date, Mapping):
             start_date = to_datetime(date['start'])
 
             numeric_part = int(''.join(filter(str.isdigit, date['frequency'])))
@@ -51,7 +60,9 @@ class Configuration(BaseModel):
                 raise ValueError(f"Unsupported unit: '{unit}'. Use 'h', 'm', 's', or 'd'.")
             delta = timedelta(**{unit_mapping[unit]: numeric_part})
 
-            return [date for date in iter(lambda: start_date.__iadd__(delta) or start_date, date['end'])]
+            return [dt for dt in iter(lambda: start_date.__iadd__(delta) or start_date, date['end'])]
+
+        raise TypeError(f"Unsupported date type: {type(date)}")
 
     @classmethod
     def load(
