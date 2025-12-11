@@ -120,7 +120,7 @@ class Output(ABC):
         """
         return f"{self.__class__.__name__}()"
 
-    def write_initial_state(self, state: State) -> None:
+    def write_initial_state(self, state: State, initial_date: datetime.datetime | None = None) -> None:
         """Write the initial state.
 
         Parameters
@@ -130,7 +130,7 @@ class Output(ABC):
         """
         state.setdefault("step", datetime.timedelta(0))
         if self.write_step_zero:
-            self.write_step(self.post_process(state))
+            self.write_step(self.post_process(state), initial_date)
 
     def write_state(self, state: State, initial_date: datetime.datetime | None = None) -> None:
         """Write the state.
