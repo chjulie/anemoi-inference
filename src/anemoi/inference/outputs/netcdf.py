@@ -130,6 +130,7 @@ class NetCDFOutput(Output):
             time += self.extra_time
         
         LOG.info(f"⏰ TIME: {time}")
+        LOG.info(f"⏰ EXTRA TIME: {self.extra_time}")
 
         if reference_date := getattr(self.context, "reference_date", None):
             self.reference_date = reference_date
@@ -152,7 +153,7 @@ class NetCDFOutput(Output):
 
         # Pre-fill the lead_time values (in hours)
         # lead_times = [(i * time_step).total_seconds() / 3600 for i in range(time)]
-        lead_times = [6 * (i + self.extra_time) for i in range(time)]
+        lead_times = [6 * (i + 1) for i in range(time - (1-self.extra_time))]
         self.lead_time_var[:] = lead_times
 
         LOG.info(f"⏰ LEAD TIMES: {lead_times}")
