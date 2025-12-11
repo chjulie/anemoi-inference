@@ -33,8 +33,7 @@ class Configuration(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    # TODO: add possibility for dict
-    date: datetime | None = None | dict[str, Any]
+    date: list[datetime] | None = None
     """The starting date for the forecast. If not provided, the date will depend on the selected Input object. If a string, it is parsed by :func:`earthkit.data.utils.dates`."""
 
     @field_validator("date", mode="before")
