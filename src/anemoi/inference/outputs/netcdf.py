@@ -13,6 +13,7 @@ import threading
 from pathlib import Path
 
 import numpy as np
+from datetime import datetime
 
 from anemoi.inference.context import Context
 from anemoi.inference.types import ProcessorConfig
@@ -82,7 +83,9 @@ class NetCDFOutput(Output):
         self.ncfile: Dataset | None = None
         self.float_size = float_size
         self.missing_value = missing_value
-        if self.write_step_zero:
+        self.initial_state_date = None
+        self.current_initial_date_index = 0  # Track the current initial_date index
+        if self.write_initial_state:
             self.extra_time = 1
         else:
             self.extra_time = 0
@@ -119,7 +122,7 @@ class NetCDFOutput(Output):
         values = len(state["latitudes"])
 
         time = 0
-        self.reference_date = state["date"]
+        # self.reference_date = state["date"]
         if (time_step := getattr(self.context, "time_step", None)) and (
             lead_time := getattr(self.context, "lead_time", None)
         ):
@@ -130,13 +133,25 @@ class NetCDFOutput(Output):
             self.reference_date = reference_date
 
         with LOCK:
+            # dimensions
             self.values_dim = self.ncfile.createDimension("values", values)
-            self.time_dim = self.ncfile.createDimension("time", time)
-            self.time_var = self.ncfile.createVariable("time", "i4", ("time",), **compression)
+            self.lead_time_dim = self.ncfile.createDimension("lead_time", time)
+            self.initial_date_dim = self.ncfile.createDimension("initial_date", None)
 
-            self.time_var.units = f"seconds since {self.reference_date}"
-            self.time_var.long_name = "time"
-            self.time_var.calendar = "gregorian"
+            # lead_time var
+            self.lead_time_var = self.ncfile.createVariable("lead_time", "i4", ("lead_time",), **compression)
+            self.lead_time_var.units = f"seconds since {self.reference_date}"
+            self.lead_time_var.long_name = "lead_time"
+            # self.time_var.calendar = "gregorian"
+
+            # initial_date var
+            self.initial_date_var = self.ncfile.createVariable("initial_date", "i4", ("initial_date",), **compression)
+            self.initial_date_var.units = "seconds since 1970-01-01 00:00:00 UTC"
+            self.initial_date_var.long_name = "initial_date"
+
+        # Pre-fill the lead_time values (in hours)
+        lead_times = [(i * time_step).total_seconds() / 3600 for i in range(time)]
+        self.lead_time_var[:] = lead_times
 
         with LOCK:
             latitudes = state["latitudes"]
@@ -156,7 +171,7 @@ class NetCDFOutput(Output):
 
         self.vars = {}
 
-        self.n = 0
+        self.n = 0      # counter for lead_time steps
 
     def ensure_variables(self, state: State) -> None:
         """Ensure that all variables are created in the NetCDF file.
@@ -189,7 +204,7 @@ class NetCDFOutput(Output):
                 self.vars[name] = self.ncfile.createVariable(
                     name,
                     self.float_size,
-                    ("time", "values"),
+                    ("initial_date", "lead_time" "values"),
                     chunksizes=chunksizes,
                     fill_value=missing_value,
                     **compression,
@@ -198,7 +213,22 @@ class NetCDFOutput(Output):
                 self.vars[name].fill_value = missing_value
                 self.vars[name].missing_value = missing_value
 
-    def write_step(self, state: State) -> None:
+    def write_state(self, state: State, initial_date: datetime) -> None:
+        """Write the state.
+
+        Parameters
+        ----------
+        state : State
+            The state to write.
+        """
+        step = state["step"]
+        if self.output_frequency is not None:
+            if (step % self.output_frequency).total_seconds() != 0:
+                return
+
+        return self.write_step(self.post_process(state), initial_date)
+
+    def write_step(self, state: State, initial_date: datetime) -> None:
         """Write the state.
 
         Parameters
@@ -209,8 +239,13 @@ class NetCDFOutput(Output):
 
         self.ensure_variables(state)
 
-        step = state["date"] - self.reference_date
-        self.time_var[self.n] = step.total_seconds()
+        # step = state["date"] - self.reference_date
+        # self.time_var[self.n] = step.total_seconds()
+
+        # write the initial_date if it's a new one
+        if self.current_initial_date_index == 0 or self.initial_date_var[self.current_initial_date_index - 1] != (initial_date - datetime(1970, 1, 1)).total_seconds():
+            self.initial_date_var[self.current_initial_date_index] = (initial_date - datetime(1970, 1, 1)).total_seconds()
+            self.n = 0  # Reset lead_time counter for the new initial_date
 
         for name, value in state["fields"].items():
             if self.skip_variable(name):
@@ -218,9 +253,13 @@ class NetCDFOutput(Output):
 
             with LOCK:
                 LOG.debug(f"🚧🚧🚧🚧🚧🚧 XXXXXX {name}, {self.n}, {value.shape}")
-                self.vars[name][self.n] = value
+                self.vars[name][self.current_initial_date_index, self.n, :] = value
+                # self.vars[name][self.current_initial_date_index][self.n] = value
 
         self.n += 1
+        if self.n >= len(self.lead_time_var):
+            self.n = 0
+            self.current_initial_date_index += 1
 
     def close(self) -> None:
         """Close the NetCDF file."""

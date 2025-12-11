@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from typing import TypeVar
 
@@ -33,14 +33,26 @@ class Configuration(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    date: datetime | None = None
+    # TODO: add possibility for dict
+    date: datetime | None = None | dict[str, Any]
     """The starting date for the forecast. If not provided, the date will depend on the selected Input object. If a string, it is parsed by :func:`earthkit.data.utils.dates`."""
 
     @field_validator("date", mode="before")
     @classmethod
-    def to_datetime(cls, date: str | int | datetime | None) -> datetime | None:
-        if date is not None:
-            return to_datetime(date)
+    def to_datetime(cls, date: str | int | datetime | dict[str, Any] | None) -> list | None:
+        if isinstance(date, datetime):
+            return [to_datetime(date)]
+        elif isinstance(date, dict[str, Any]):
+            start_date = to_datetime(date['start'])
+
+            numeric_part = int(''.join(filter(str.isdigit, date['frequency'])))
+            unit = date['frequency'][-1].lower()
+            unit_mapping = {'h': 'hours', 'd': 'days'}
+            if unit not in unit_mapping:
+                raise ValueError(f"Unsupported unit: '{unit}'. Use 'h', 'm', 's', or 'd'.")
+            delta = timedelta(**{unit_mapping[unit]: numeric_part})
+
+            return [date for date in iter(lambda: start_date.__iadd__(delta) or start_date, date['end'])]
 
     @classmethod
     def load(

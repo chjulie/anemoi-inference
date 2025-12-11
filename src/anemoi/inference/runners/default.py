@@ -114,61 +114,71 @@ class DefaultRunner(Runner):
         self.lead_time = lead_time
         self.time_step = self.checkpoint.timestep
 
+        # Loop over the date range:
+
+        self.config.dates.start
+        self.config.dates.end
+        self.config.dates.frequency
+
         output = self.create_output()
 
-        # In case the constant forcings are from another input, combine them here
-        # So that they are in considered in the `write_initial_state`
+        for initial_date in self.config.date:
+            LOG.info(f"☔️ INFO: initial state date: {initial_date}")
+            # TODO: add dims in output for lead_time
 
-        prognostic_input = self.create_prognostics_input()
-        LOG.info(f"📥 Prognostic input: {prognostic_input}")
-        prognostic_state = prognostic_input.create_input_state(date=self.config.date)
-        self._check_state(prognostic_state, "prognostics")
+            # In case the constant forcings are from another input, combine them here
+            # So that they are in considered in the `write_initial_state`
 
-        constants_input = self.create_constant_coupled_forcings_input()
-        LOG.info(f"📥 Constant forcings input: {constants_input}")
-        constants_state = constants_input.create_input_state(date=self.config.date)
-        self._check_state(constants_state, "constant_forcings")
+            prognostic_input = self.create_prognostics_input()
+            LOG.info(f"📥 Prognostic input: {prognostic_input}")
+            prognostic_state = prognostic_input.create_input_state(date=self.config.date)
+            self._check_state(prognostic_state, "prognostics")
 
-        forcings_input = self.create_dynamic_forcings_input()
-        LOG.info(f"📥 Dynamic forcings input: {forcings_input}")
-        forcings_state = forcings_input.create_input_state(date=self.config.date)
-        self._check_state(forcings_state, "dynamic_forcings")
+            constants_input = self.create_constant_coupled_forcings_input()
+            LOG.info(f"📥 Constant forcings input: {constants_input}")
+            constants_state = constants_input.create_input_state(date=self.config.date)
+            self._check_state(constants_state, "constant_forcings")
 
-        input_state = self._combine_states(
-            prognostic_state,
-            constants_state,
-            forcings_state,
-        )
+            forcings_input = self.create_dynamic_forcings_input()
+            LOG.info(f"📥 Dynamic forcings input: {forcings_input}")
+            forcings_state = forcings_input.create_input_state(date=self.config.date)
+            self._check_state(forcings_state, "dynamic_forcings")
 
-        # This hook is needed for the coupled runner
-        self.input_state_hook(constants_state)
-
-        # For step-zero only
-        initial_state = Output.reduce(
-            self._initial_state(
+            input_state = self._combine_states(
                 prognostic_state,
                 constants_state,
                 forcings_state,
             )
-        )
-        # Top-level post-processors on the other hand are applied on State and are executed here.
-        LOG.info("Top-level post-processors: %s", self.post_processors)
 
-        for processor in self.post_processors:
-            initial_state = processor.process(initial_state)
+            # This hook is needed for the coupled runner
+            self.input_state_hook(constants_state)
 
-        output.open(initial_state)
+            # For step-zero only
+            initial_state = Output.reduce(
+                self._initial_state(
+                    prognostic_state,
+                    constants_state,
+                    forcings_state,
+                )
+            )
+            # Top-level post-processors on the other hand are applied on State and are executed here.
+            LOG.info("Top-level post-processors: %s", self.post_processors)
 
-        LOG.info("write_initial_state: %s", output)
-        output.write_initial_state(initial_state)
-
-        for state in self.run(input_state=input_state, lead_time=lead_time):
-            # Apply top-level post-processors
             for processor in self.post_processors:
-                state = processor.process(state)
-            output.write_state(state)
+                initial_state = processor.process(initial_state)
 
-        output.close()
+            output.open(initial_state)
+
+            LOG.info("write_initial_state: %s", output)
+            output.write_initial_state(initial_state)
+
+            for state in self.run(input_state=input_state, lead_time=lead_time):
+                # Apply top-level post-processors
+                for processor in self.post_processors:
+                    state = processor.process(state)
+                output.write_state(state, initial_date)
+
+            output.close()
 
         if "accumulate_from_start_of_forecast" not in self.config.post_processors:
             LOG.warning(
