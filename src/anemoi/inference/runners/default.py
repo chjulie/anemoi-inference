@@ -114,14 +114,9 @@ class DefaultRunner(Runner):
         self.lead_time = lead_time
         self.time_step = self.checkpoint.timestep
 
-        # Loop over the date range:
-
-        self.config.dates.start
-        self.config.dates.end
-        self.config.dates.frequency
-
         output = self.create_output()
 
+        # Loop over the date range:
         for initial_date in self.config.date:
             LOG.info(f"☔️ INFO: initial state date: {initial_date}")
             # TODO: add dims in output for lead_time
