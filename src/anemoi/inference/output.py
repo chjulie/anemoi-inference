@@ -321,7 +321,7 @@ class ForwardOutput(Output):
 
         self.output.close()
 
-    def write_initial_state(self, state: State) -> None:
+    def write_initial_state(self, state: State, initial_date: datetime.datetime | None = None) -> None:
         """Write the initial step of the state.
 
         Parameters
@@ -331,7 +331,11 @@ class ForwardOutput(Output):
         """
         state.setdefault("step", datetime.timedelta(0))
 
-        self.output.write_initial_state(self.modify_state(state))
+        try:
+            self.output.write_initial_state(self.modify_state(state), initial_date)
+        except TypeError:
+            # Fallback for outputs that do not accept the initial_date parameter
+            self.output.write_initial_state(self.modify_state(state))
 
     def write_step(self, state: State, initial_date: datetime.datetime | None = None) -> None:
         """Write a step of the state.

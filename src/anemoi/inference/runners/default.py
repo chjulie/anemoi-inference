@@ -165,7 +165,7 @@ class DefaultRunner(Runner):
             output.open(initial_state)
 
             LOG.info("write_initial_state: %s", output)
-            output.write_initial_state(initial_state)
+            output.write_initial_state(initial_state, initial_date)
 
             for state in self.run(input_state=input_state, lead_time=lead_time):
                 # Apply top-level post-processors
