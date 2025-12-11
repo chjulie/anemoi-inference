@@ -193,7 +193,7 @@ class NetCDFOutput(Output):
             if name in self.vars:
                 continue
 
-            chunksizes = (1, values)
+            chunksizes = (1, 1, values)
 
             while np.prod(chunksizes) > 1000000:
                 chunksizes = tuple(int(np.ceil(x / 2)) for x in chunksizes)
