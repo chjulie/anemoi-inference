@@ -42,7 +42,7 @@ class Configuration(BaseModel):
     def to_datetime(cls, date: str | int | datetime | dict[str, Any] | None) -> list | None:
         if isinstance(date, datetime):
             return [to_datetime(date)]
-        elif isinstance(date, dict[str, Any]):
+        elif isinstance(date, dict):
             start_date = to_datetime(date['start'])
 
             numeric_part = int(''.join(filter(str.isdigit, date['frequency'])))
