@@ -364,7 +364,7 @@ class DefaultRunner(Runner):
         """
         input = self.create_boundary_forcings_input()
         result = BoundaryForcings(self, input, variables, mask)
-        LOG.info("Boundary forcing: %s", result)
+        # LOG.info("Boundary forcing: %s", result)
         return [result]
 
     def create_pre_processors(self) -> list[Processor]:
@@ -379,7 +379,7 @@ class DefaultRunner(Runner):
         for processor in self.config.pre_processors:
             result.append(create_pre_processor(self, processor))
 
-        LOG.info("Pre processors: %s", result)
+        # LOG.info("Pre processors: %s", result)
         return result
 
     def create_post_processors(self) -> list[Processor]:
@@ -394,7 +394,7 @@ class DefaultRunner(Runner):
         for processor in self.config.post_processors:
             result.append(create_post_processor(self, processor))
 
-        LOG.info("Post processors: %s", result)
+        # LOG.info("Post processors: %s", result)
         return result
 
     def _combine_states(self, *states: dict[str, Any]) -> dict[str, Any]:

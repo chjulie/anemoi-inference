@@ -128,6 +128,8 @@ class NetCDFOutput(Output):
         ):
             time = lead_time // time_step
             time += self.extra_time
+        
+        LOG.info(f"⏰ TIME: {time}")
 
         if reference_date := getattr(self.context, "reference_date", None):
             self.reference_date = reference_date
@@ -140,9 +142,8 @@ class NetCDFOutput(Output):
 
             # lead_time var
             self.lead_time_var = self.ncfile.createVariable("lead_time", "i4", ("lead_time",), **compression)
-            self.lead_time_var.units = f"seconds since {self.reference_date}"
+            self.lead_time_var.units = ""
             self.lead_time_var.long_name = "lead_time"
-            # self.time_var.calendar = "gregorian"
 
             # initial_date var
             self.initial_date_var = self.ncfile.createVariable("initial_date", "i4", ("initial_date",), **compression)
@@ -150,8 +151,11 @@ class NetCDFOutput(Output):
             self.initial_date_var.long_name = "initial_date"
 
         # Pre-fill the lead_time values (in hours)
-        lead_times = [(i * time_step).total_seconds() / 3600 for i in range(time)]
+        # lead_times = [(i * time_step).total_seconds() / 3600 for i in range(time)]
+        lead_times = [6 * (i + self.extra_time) for i in range(time)]
         self.lead_time_var[:] = lead_times
+
+        LOG.info(f"⏰ LEAD TIMES: {lead_times}")
 
         with LOCK:
             latitudes = state["latitudes"]
@@ -239,9 +243,6 @@ class NetCDFOutput(Output):
 
         self.ensure_variables(state)
 
-        # step = state["date"] - self.reference_date
-        # self.time_var[self.n] = step.total_seconds()
-
         # write the initial_date if it's a new one
         if self.current_initial_date_index == 0 or self.initial_date_var[self.current_initial_date_index - 1] != (initial_date - datetime(1970, 1, 1)).total_seconds():
             self.initial_date_var[self.current_initial_date_index] = (initial_date - datetime(1970, 1, 1)).total_seconds()
@@ -254,7 +255,6 @@ class NetCDFOutput(Output):
             with LOCK:
                 LOG.debug(f"🚧🚧🚧🚧🚧🚧 XXXXXX {name}, {self.n}, {value.shape}")
                 self.vars[name][self.current_initial_date_index, self.n, :] = value
-                # self.vars[name][self.current_initial_date_index][self.n] = value
 
         self.n += 1
         if self.n >= len(self.lead_time_var):
