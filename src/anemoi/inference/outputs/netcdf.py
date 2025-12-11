@@ -204,7 +204,7 @@ class NetCDFOutput(Output):
                 self.vars[name] = self.ncfile.createVariable(
                     name,
                     self.float_size,
-                    ("initial_date", "lead_time" "values"),
+                    ("initial_date", "lead_time", "values"),
                     chunksizes=chunksizes,
                     fill_value=missing_value,
                     **compression,
