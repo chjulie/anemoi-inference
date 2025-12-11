@@ -126,17 +126,17 @@ class DefaultRunner(Runner):
 
             prognostic_input = self.create_prognostics_input()
             LOG.info(f"📥 Prognostic input: {prognostic_input}")
-            prognostic_state = prognostic_input.create_input_state(date=self.config.date)
+            prognostic_state = prognostic_input.create_input_state(date=initial_date)
             self._check_state(prognostic_state, "prognostics")
 
             constants_input = self.create_constant_coupled_forcings_input()
             LOG.info(f"📥 Constant forcings input: {constants_input}")
-            constants_state = constants_input.create_input_state(date=self.config.date)
+            constants_state = constants_input.create_input_state(date=initial_date)
             self._check_state(constants_state, "constant_forcings")
 
             forcings_input = self.create_dynamic_forcings_input()
             LOG.info(f"📥 Dynamic forcings input: {forcings_input}")
-            forcings_state = forcings_input.create_input_state(date=self.config.date)
+            forcings_state = forcings_input.create_input_state(date=initial_date)
             self._check_state(forcings_state, "dynamic_forcings")
 
             input_state = self._combine_states(
