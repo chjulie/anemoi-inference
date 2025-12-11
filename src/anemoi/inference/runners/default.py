@@ -171,7 +171,14 @@ class DefaultRunner(Runner):
                 # Apply top-level post-processors
                 for processor in self.post_processors:
                     state = processor.process(state)
-                output.write_state(state, initial_date)
+                try:
+                    output.write_state(state, initial_date)
+                except TypeError as exc:
+                    # Fallback for outputs that only accept a single argument (state)
+                    if "positional argument" in str(exc):
+                        output.write_state(state)
+                    else:
+                        raise
 
             output.close()
 

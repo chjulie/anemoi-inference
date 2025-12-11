@@ -132,20 +132,22 @@ class Output(ABC):
         if self.write_step_zero:
             self.write_step(self.post_process(state))
 
-    def write_state(self, state: State) -> None:
+    def write_state(self, state: State, initial_date: datetime.datetime | None = None) -> None:
         """Write the state.
 
         Parameters
         ----------
         state : State
             The state to write.
+        initial_date : Optional[datetime]
+            Initial date associated with the state (forwarded when supported).
         """
         step = state["step"]
         if self.output_frequency is not None:
             if (step % self.output_frequency).total_seconds() != 0:
                 return
 
-        return self.write_step(self.post_process(state))
+        return self.write_step(self.post_process(state), initial_date)
 
     @classmethod
     def reduce(cls, state: State) -> State:
@@ -331,15 +333,26 @@ class ForwardOutput(Output):
 
         self.output.write_initial_state(self.modify_state(state))
 
-    def write_step(self, state: State) -> None:
+    def write_step(self, state: State, initial_date: datetime.datetime | None = None) -> None:
         """Write a step of the state.
 
         Parameters
         ----------
         state : State
             The state to write.
+        initial_date : Optional[datetime]
+            Initial date associated with the state (forwarded when supported).
         """
-        self.output.write_state(self.modify_state(state))
+        state = self.modify_state(state)
+        if initial_date is None:
+            self.output.write_state(state)
+            return
+
+        try:
+            self.output.write_state(state, initial_date)
+        except TypeError:
+            # Fallback for outputs that do not accept the initial_date parameter
+            self.output.write_state(state)
 
     def print_summary(self, depth: int = 0) -> None:
         """Print a summary of the output.
