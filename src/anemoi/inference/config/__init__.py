@@ -52,6 +52,7 @@ class Configuration(BaseModel):
             return [date]
         if isinstance(date, Mapping):
             start_date = to_datetime(date['start'])
+            end_date = to_datetime(date['end'])
 
             numeric_part = int(''.join(filter(str.isdigit, date['frequency'])))
             unit = date['frequency'][-1].lower()
@@ -60,7 +61,13 @@ class Configuration(BaseModel):
                 raise ValueError(f"Unsupported unit: '{unit}'. Use 'h', 'm', 's', or 'd'.")
             delta = timedelta(**{unit_mapping[unit]: numeric_part})
 
-            return [dt for dt in iter(lambda: start_date.__iadd__(delta) or start_date, date['end'])]
+            date_range = []
+            while start_date < end_date:
+                date_range.append(start_date)
+                start_date += delta
+            LOG.info(f" 🍎 DATE RANGE: {date_range}")
+            return date_range
+        
 
         raise TypeError(f"Unsupported date type: {type(date)}")
 
