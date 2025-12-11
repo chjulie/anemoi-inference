@@ -260,7 +260,7 @@ class DefaultRunner(Runner):
         variables = self.variables.retrieved_prognostic_variables()
         config = self._input_forcings("prognostic_input", "input") if variables else "empty"
         input = create_input(self, config, variables=variables, purpose="prognostics")
-        LOG.info("Prognostic input: %s", input)
+        # LOG.info("Prognostic input: %s", input)
         return input
 
     def create_constant_coupled_forcings_input(self) -> Input:
@@ -274,7 +274,7 @@ class DefaultRunner(Runner):
         variables = self.variables.retrieved_constant_forcings_variables()
         config = self._input_forcings("constant_forcings", "forcings", "input") if variables else "empty"
         input = create_input(self, config, variables=variables, purpose="constant_forcings")
-        LOG.info("Constant coupled forcings input: %s", input)
+        # LOG.info("Constant coupled forcings input: %s", input)
         return input
 
     def create_dynamic_forcings_input(self) -> Input:
@@ -288,7 +288,7 @@ class DefaultRunner(Runner):
         variables = self.variables.retrieved_dynamic_forcings_variables()
         config = self._input_forcings("dynamic_forcings", "-forcings", "input") if variables else "empty"
         input = create_input(self, config, variables=variables, purpose="dynamic_forcings")
-        LOG.info("Dynamic forcings input: %s", input)
+        # LOG.info("Dynamic forcings input: %s", input)
         return input
 
     def create_boundary_forcings_input(self) -> Input:
@@ -302,7 +302,7 @@ class DefaultRunner(Runner):
         variables = self.variables.retrieved_prognostic_variables()
         config = self._input_forcings("boundary_forcings", "-boundary", "forcings", "input") if variables else "empty"
         input = create_input(self, config, variables=variables, purpose="boundary_forcings")
-        LOG.info("Boundary forcings input: %s", input)
+        # LOG.info("Boundary forcings input: %s", input)
         return input
 
     #########################################################################################################
@@ -323,7 +323,7 @@ class DefaultRunner(Runner):
         """
         input = self.create_constant_coupled_forcings_input()
         result = ConstantForcings(self, input, variables, mask)
-        LOG.info("Constant coupled forcing: %s", result)
+        # LOG.info("Constant coupled forcing: %s", result)
 
         return [result]
 
@@ -344,7 +344,7 @@ class DefaultRunner(Runner):
         """
         input = self.create_dynamic_forcings_input()
         result = CoupledForcings(self, input, variables, mask)
-        LOG.info("Dynamic coupled forcing: %s", result)
+        # LOG.info("Dynamic coupled forcing: %s", result)
         return [result]
 
     def create_boundary_forcings(self, variables: list[str], mask: IntArray) -> list[Forcings]:
