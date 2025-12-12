@@ -272,7 +272,8 @@ class NetCDFOutput(Output):
 
             with LOCK:
                 LOG.debug(f"🚧🚧🚧🚧🚧🚧 XXXXXX {name}, {self.n}, {value.shape}")
-                self.vars[name][self.current_initial_date_index, self.n, :] = value
+                # self.vars[name][self.current_initial_date_index, self.n, :] = value
+                self.vars[name][self.current_initial_date_index, self.n] = value
 
         self.n += 1
         if self.n >= len(self.lead_time_var):
