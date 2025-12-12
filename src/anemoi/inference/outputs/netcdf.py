@@ -150,8 +150,9 @@ class NetCDFOutput(Output):
             # initial_date var
             # Use float64 to avoid int32 overflow or truncation when writing seconds since epoch
             self.initial_date_var = self.ncfile.createVariable("initial_date", "f8", ("initial_date",), **compression)
-            self.initial_date_var.units = "seconds since 1970-01-01 00:00:00 UTC"
+            self.initial_date_var.units = "seconds since 1970-01-01 00:00:00"
             self.initial_date_var.long_name = "initial_date"
+            self.initial_date_var.calendar = "proleptic_gregorian"
 
         # Pre-fill the lead_time values (in hours)
         # lead_times = [(i * time_step).total_seconds() / 3600 for i in range(time)]
