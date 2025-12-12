@@ -152,7 +152,7 @@ class NetCDFOutput(Output):
             self.initial_date_var = self.ncfile.createVariable("initial_date", "i8", ("initial_date",), **compression)
             self.initial_date_var.units = "hours since 1980-01-01 00:00:00"
             self.initial_date_var.long_name = "initial_date"
-            # self.initial_date_var.calendar = "gregorian"
+            self.initial_date_var.calendar = "gregorian"
 
         # Pre-fill the lead_time values (in hours)
         # lead_times = [(i * time_step).total_seconds() / 3600 for i in range(time)]
