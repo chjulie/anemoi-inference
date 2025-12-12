@@ -134,7 +134,8 @@ class NetCDFOutput(Output):
         LOG.info(f"⏰ EXTRA TIME: {self.extra_time}")
 
         if reference_date := getattr(self.context, "date", None):
-            self.reference_date = reference_date[0]
+            self.reference_date = reference_date
+        LOG.info(f"🚧🚧🚧🚧🚧🚧 open(): SELF.REFERENCE_DATE[0]: {self.reference_date}")
 
         with LOCK:
             # dimensions
@@ -150,9 +151,10 @@ class NetCDFOutput(Output):
             # initial_date var
             # Store epoch seconds as int64 to avoid nanosecond overflow in decoders
             self.initial_date_var = self.ncfile.createVariable("initial_date", "i4", ("initial_date",), **compression)
-            self.initial_date_var.units = f"seconds since {self.reference_date}"
+            self.initial_date_var.units = f"seconds since {self.reference_date[0]}"
             self.initial_date_var.long_name = "initial_date"
             self.initial_date_var.calendar = "gregorian"
+            LOG.info(f"🚧🚧🚧🚧🚧🚧 open(): INITIAL DATE UNITS: seconds since {self.reference_date[0]}")
 
         # Pre-fill the lead_time values (in hours)
         # lead_times = [(i * time_step).total_seconds() / 3600 for i in range(time)]
@@ -233,7 +235,8 @@ class NetCDFOutput(Output):
         if self.output_frequency is not None:
             if (step % self.output_frequency).total_seconds() != 0:
                 return
-
+            
+        LOG.info(f"🚧🚧🚧🚧🚧🚧 write_state(): INITIAL DATE: {initial_date}")
         return self.write_step(self.post_process(state), initial_date)
 
     def write_step(self, state: State, initial_date: datetime) -> None:
@@ -254,7 +257,10 @@ class NetCDFOutput(Output):
         if self._active_initial_date != initial_date:
             self._active_initial_date = initial_date
             with LOCK:
-                step = initial_date - self.reference_date
+                step = initial_date - self.reference_date[0]
+                LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): INITIAL DATE: {initial_date}")
+                LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): SELF.REFERENCE_DATE[0]: {self.reference_date[0]}")
+                LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): STEP: {step}")
                 self.initial_date_var[self.current_initial_date_index] = step.total_seconds()
             self.n = 0
 

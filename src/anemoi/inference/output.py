@@ -330,7 +330,7 @@ class ForwardOutput(Output):
             The state dictionary.
         """
         state.setdefault("step", datetime.timedelta(0))
-
+        LOG.info(f"🚧🚧🚧🚧🚧🚧 forwardoutput.write_initial_state(): INITIAL DATE: {initial_date}")
         try:
             self.output.write_initial_state(self.modify_state(state), initial_date)
         except TypeError:
@@ -348,6 +348,7 @@ class ForwardOutput(Output):
             Initial date associated with the state (forwarded when supported).
         """
         state = self.modify_state(state)
+        LOG.info(f"🚧🚧🚧🚧🚧🚧 forwardoutput.write_initial_step(): INITIAL DATE: {initial_date}")
         if initial_date is None:
             self.output.write_state(state)
             return
