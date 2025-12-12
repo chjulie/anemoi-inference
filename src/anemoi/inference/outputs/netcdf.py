@@ -148,7 +148,8 @@ class NetCDFOutput(Output):
             self.lead_time_var.long_name = "lead_time"
 
             # initial_date var
-            self.initial_date_var = self.ncfile.createVariable("initial_date", "i4", ("initial_date",), **compression)
+            # Use float64 to avoid int32 overflow or truncation when writing seconds since epoch
+            self.initial_date_var = self.ncfile.createVariable("initial_date", "f8", ("initial_date",), **compression)
             self.initial_date_var.units = "seconds since 1970-01-01 00:00:00 UTC"
             self.initial_date_var.long_name = "initial_date"
 
@@ -248,9 +249,10 @@ class NetCDFOutput(Output):
         # Write the initial_date only when it changes; keep lead_time counter for the same date
         if self._active_initial_date != initial_date:
             self._active_initial_date = initial_date
-            self.initial_date_var[self.current_initial_date_index] = (
-                initial_date - datetime(1970, 1, 1)
-            ).total_seconds()
+            with LOCK:
+                self.initial_date_var[self.current_initial_date_index] = float(
+                    (initial_date - datetime(1970, 1, 1)).total_seconds()
+                )
             self.n = 0
 
         for name, value in state["fields"].items():
