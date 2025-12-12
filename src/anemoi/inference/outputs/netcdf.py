@@ -259,12 +259,13 @@ class NetCDFOutput(Output):
             step = initial_date - self.reference_date[0]
             self.initial_date_var[self.current_initial_date_index] = step.total_seconds()
             self.n = 0
-            
+
             LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): INITIAL DATE: {initial_date}")
             LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): SELF.REFERENCE_DATE[0]: {self.reference_date[0]}")
             LOG.info(f"🚧🚧🚧🚧🚧🚧 self.current_initial_date_index: {self.current_initial_date_index}")
             LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): STEP:{type(step)}, {step}")
             LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): STEP.total_seconds(): {step.total_seconds()}")
+            LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): self.initial_date_var: {self.initial_date_var}")
 
         for name, value in state["fields"].items():
             if self.skip_variable(name):
