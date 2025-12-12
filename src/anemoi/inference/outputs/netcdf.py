@@ -166,10 +166,6 @@ class NetCDFOutput(Output):
         initial_dates = [(x - ref).total_seconds() for x in self.reference_date]
         initial_dates_seconds = np.asarray(initial_dates, dtype=np.int64)
         self.initial_date_var[:] = initial_dates_seconds
-        LOG.info(f"🚧🚧🚧🚧🚧🚧 open(): initial_dates: {initial_dates}")
-        LOG.info(f"🚧🚧🚧🚧🚧🚧 open(): initial_dates_seconds: {initial_dates_seconds}")
-        LOG.info(f"🚧🚧🚧🚧🚧🚧 open(): INITIAL DATE var: {self.initial_date_var}")
-
         
 
         LOG.info(f"⏰ LEAD TIMES: {lead_times}")
@@ -261,6 +257,25 @@ class NetCDFOutput(Output):
 
         self.ensure_variables(state)
 
+        # Safety checks before writing
+        if self.ncfile is None:
+            LOG.error("NetCDF file is closed; cannot write state")
+            return
+        try:
+            n_init = len(self.initial_date_var)
+        except Exception:
+            n_init = None
+        try:
+            n_lt = len(self.lead_time_var)
+        except Exception:
+            n_lt = None
+        if n_init is not None and self.current_initial_date_index >= n_init:
+            LOG.error("initial_date index %s out of range %s", self.current_initial_date_index, n_init)
+            return
+        if n_lt is not None and self.n >= n_lt:
+            LOG.error("lead_time index %s out of range %s", self.n, n_lt)
+            return
+
         # step = state["date"] - self.reference_date
         # self.time_var[self.n] = step.total_seconds()
 
@@ -274,15 +289,36 @@ class NetCDFOutput(Output):
                 continue
 
             with LOCK:
-                LOG.debug(f"🚧🚧🚧🚧🚧🚧 XXXXXX {name}, {self.n}, {value.shape}")
-                # LOG.info(f"🚧🚧🚧🚧🚧🚧 XXXXXX {name}, {self.n}, {}, {value.shape}")
-                value = np.asarray(value, dtype=self.vars[name].dtype)
+                var = self.vars[name]
+                arr = np.ascontiguousarray(value, dtype=var.dtype)
+                expected = len(state["latitudes"])  # equals values dimension length
+                if arr.shape != (expected,):
+                    LOG.error(
+                        "Value shape mismatch for %s: got %s, expected (%s,)",
+                        name,
+                        arr.shape,
+                        expected,
+                    )
+                    continue
 
-                LOG.info(f" 🚧 self.vars[name][...].shape {self.vars[name][self.current_initial_date_index, self.n,:].shape}")
-                LOG.info(f" 🚧 values.shape {value.shape}")
-                LOG.info(f" 🚧 values.dims {value.dims}")
-                                # self.vars[name][self.current_initial_date_index, self.n, :] = value
-                self.vars[name][self.current_initial_date_index, self.n,:] = value
+                LOG.debug(
+                    f"🚧 write {name} at [init={self.current_initial_date_index}, lead={self.n}], shape={arr.shape}"
+                )
+                try:
+                    var[self.current_initial_date_index, self.n, :] = arr
+                except Exception:
+                    LOG.exception(
+                        "Failed writing variable %s at indices (%s, %s)",
+                        name,
+                        self.current_initial_date_index,
+                        self.n,
+                    )
+                    continue
+
+                try:
+                    self.ncfile.sync()
+                except Exception:
+                    LOG.debug("sync() failed; continuing")
 
         self.n += 1
         if self.n >= len(self.lead_time_var):
