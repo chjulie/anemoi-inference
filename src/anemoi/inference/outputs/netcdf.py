@@ -133,8 +133,8 @@ class NetCDFOutput(Output):
         LOG.info(f"⏰ TIME: {time}")
         LOG.info(f"⏰ EXTRA TIME: {self.extra_time}")
 
-        if reference_date := getattr(self.context, "reference_date", None):
-            self.reference_date = reference_date
+        if reference_date := getattr(self.context, "date", None):
+            self.reference_date = reference_date[0]
 
         with LOCK:
             # dimensions
@@ -149,8 +149,8 @@ class NetCDFOutput(Output):
 
             # initial_date var
             # Store epoch seconds as int64 to avoid nanosecond overflow in decoders
-            self.initial_date_var = self.ncfile.createVariable("initial_date", "i8", ("initial_date",), **compression)
-            self.initial_date_var.units = "hours since 1980-01-01 00:00:00"
+            self.initial_date_var = self.ncfile.createVariable("initial_date", "i4", ("initial_date",), **compression)
+            self.initial_date_var.units = f"seconds since {self.reference_date}"
             self.initial_date_var.long_name = "initial_date"
             self.initial_date_var.calendar = "gregorian"
 
@@ -254,8 +254,8 @@ class NetCDFOutput(Output):
         if self._active_initial_date != initial_date:
             self._active_initial_date = initial_date
             with LOCK:
-                step = initial_date - datetime(1980, 1, 1, 0, 0, 0)
-                self.initial_date_var[self.current_initial_date_index] = step.total_seconds() / 3600.0
+                step = initial_date - self.reference_date
+                self.initial_date_var[self.current_initial_date_index] = step.total_seconds()
             self.n = 0
 
         for name, value in state["fields"].items():
