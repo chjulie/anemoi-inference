@@ -247,13 +247,15 @@ class NetCDFOutput(Output):
 
         self.ensure_variables(state)
 
+        # step = state["date"] - self.reference_date
+        # self.time_var[self.n] = step.total_seconds()
+
         # Write the initial_date only when it changes; keep lead_time counter for the same date
         if self._active_initial_date != initial_date:
             self._active_initial_date = initial_date
             with LOCK:
-                self.initial_date_var[self.current_initial_date_index] = float(
-                    (initial_date - datetime(1970, 1, 1)).total_seconds()
-                )
+                step = initial_date - datetime(1970, 1, 1, 0, 0, 0)
+                self.initial_date_var[self.current_initial_date_index] = step.total_seconds()
             self.n = 0
 
         for name, value in state["fields"].items():
