@@ -267,16 +267,7 @@ class NetCDFOutput(Output):
         # Write the initial_date only when it changes; keep lead_time counter for the same date
         if self._active_initial_date != initial_date:
             self._active_initial_date = initial_date
-            # step = initial_date - self.reference_date[0]
-            # self.initial_date_var[self.current_initial_date_index] = step.total_seconds()
             self.n = 0
-
-            LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): INITIAL DATE: {initial_date}")
-            LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): SELF.REFERENCE_DATE[0]: {self.reference_date[0]}")
-            LOG.info(f"🚧🚧🚧🚧🚧🚧 self.current_initial_date_index: {self.current_initial_date_index}")
-            # LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): STEP:{type(step)}, {step}")
-            # LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): STEP.total_seconds(): {step.total_seconds()}")
-            LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): self.initial_date_var: {self.initial_date_var}")
 
         for name, value in state["fields"].items():
             if self.skip_variable(name):
@@ -284,8 +275,14 @@ class NetCDFOutput(Output):
 
             with LOCK:
                 LOG.debug(f"🚧🚧🚧🚧🚧🚧 XXXXXX {name}, {self.n}, {value.shape}")
-                # self.vars[name][self.current_initial_date_index, self.n, :] = value
-                self.vars[name][self.current_initial_date_index, self.n] = value
+                # LOG.info(f"🚧🚧🚧🚧🚧🚧 XXXXXX {name}, {self.n}, {}, {value.shape}")
+                value = np.asarray(value, dtype=self.vars[name].dtype)
+
+                LOG.info(f" 🚧 self.vars[name]._FillValue {self.vars[name]._FillValue}")
+                LOG.info(f" 🚧 self.vars[name].dtype {self.vars[name].dtype}")
+                LOG.info(f" 🚧 np.asarray(value).dtype {value.dtype}")
+                                # self.vars[name][self.current_initial_date_index, self.n, :] = value
+                self.vars[name][self.current_initial_date_index, self.n,:] = value
 
         self.n += 1
         if self.n >= len(self.lead_time_var):
