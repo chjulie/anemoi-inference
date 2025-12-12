@@ -278,9 +278,9 @@ class NetCDFOutput(Output):
                 # LOG.info(f"🚧🚧🚧🚧🚧🚧 XXXXXX {name}, {self.n}, {}, {value.shape}")
                 value = np.asarray(value, dtype=self.vars[name].dtype)
 
-                LOG.info(f" 🚧 self.vars[name]._FillValue {self.vars[name]._FillValue}")
-                LOG.info(f" 🚧 self.vars[name].dtype {self.vars[name].dtype}")
-                LOG.info(f" 🚧 np.asarray(value).dtype {value.dtype}")
+                LOG.info(f" 🚧 self.vars[name][...].shape {self.vars[name][self.current_initial_date_index, self.n,:].shape}")
+                LOG.info(f" 🚧 values.shape {value.shape}")
+                LOG.info(f" 🚧 values.dims {value.dims}")
                                 # self.vars[name][self.current_initial_date_index, self.n, :] = value
                 self.vars[name][self.current_initial_date_index, self.n,:] = value
 
