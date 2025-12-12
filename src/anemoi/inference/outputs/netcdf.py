@@ -85,6 +85,7 @@ class NetCDFOutput(Output):
         self.missing_value = missing_value
         self.initial_state_date = None
         self.current_initial_date_index = 0  # Track the current initial_date index
+        self._active_initial_date: datetime | None = None
         if self.write_initial_state:
             self.extra_time = 1
         else:
@@ -244,10 +245,13 @@ class NetCDFOutput(Output):
 
         self.ensure_variables(state)
 
-        # write the initial_date if it's a new one
-        if self.current_initial_date_index == 0 or self.initial_date_var[self.current_initial_date_index - 1] != (initial_date - datetime(1970, 1, 1)).total_seconds():
-            self.initial_date_var[self.current_initial_date_index] = (initial_date - datetime(1970, 1, 1)).total_seconds()
-            self.n = 0  # Reset lead_time counter for the new initial_date
+        # Write the initial_date only when it changes; keep lead_time counter for the same date
+        if self._active_initial_date != initial_date:
+            self._active_initial_date = initial_date
+            self.initial_date_var[self.current_initial_date_index] = (
+                initial_date - datetime(1970, 1, 1)
+            ).total_seconds()
+            self.n = 0
 
         for name, value in state["fields"].items():
             if self.skip_variable(name):
@@ -261,6 +265,7 @@ class NetCDFOutput(Output):
         if self.n >= len(self.lead_time_var):
             self.n = 0
             self.current_initial_date_index += 1
+            self._active_initial_date = None
 
     def close(self) -> None:
         """Close the NetCDF file."""
