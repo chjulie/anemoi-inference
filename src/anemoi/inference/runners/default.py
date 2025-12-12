@@ -179,7 +179,7 @@ class DefaultRunner(Runner):
                         output.write_state(state)
                     else:
                         raise
-
+            LOG.info(f"🚧 Output.lead_time_var: {output.lead_time_var}")
             output.close()
 
         if "accumulate_from_start_of_forecast" not in self.config.post_processors:

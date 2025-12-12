@@ -135,13 +135,13 @@ class NetCDFOutput(Output):
 
         if reference_date := getattr(self.context, "date", None):
             self.reference_date = reference_date
-        LOG.info(f"🚧🚧🚧🚧🚧🚧 open(): SELF.REFERENCE_DATE[0]: {self.reference_date}")
+        LOG.info(f"🚧🚧🚧🚧🚧🚧 open(): SELF.REFERENCE_DATE: {self.reference_date}")
 
         with LOCK:
             # dimensions
             self.values_dim = self.ncfile.createDimension("values", values)
             self.lead_time_dim = self.ncfile.createDimension("lead_time", time)
-            self.initial_date_dim = self.ncfile.createDimension("initial_date", None)
+            self.initial_date_dim = self.ncfile.createDimension("initial_date", len(self.reference_date))
 
             # lead_time var
             self.lead_time_var = self.ncfile.createVariable("lead_time", "i4", ("lead_time",), **compression)
@@ -260,7 +260,9 @@ class NetCDFOutput(Output):
                 step = initial_date - self.reference_date[0]
                 LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): INITIAL DATE: {initial_date}")
                 LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): SELF.REFERENCE_DATE[0]: {self.reference_date[0]}")
-                LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): STEP: {step}")
+                LOG.info(f"🚧🚧🚧🚧🚧🚧 self.current_initial_date_index: {self.current_initial_date_index}")
+                LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): STEP:{type(step)}, {step}")
+                LOG.info(f"🚧🚧🚧🚧🚧🚧 write_step(): STEP.total_seconds(): {step.total_seconds()}")
                 self.initial_date_var[self.current_initial_date_index] = step.total_seconds()
             self.n = 0
 
