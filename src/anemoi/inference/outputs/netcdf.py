@@ -148,8 +148,8 @@ class NetCDFOutput(Output):
             self.lead_time_var.long_name = "lead_time"
 
             # initial_date var
-            # Use float64 to avoid int32 overflow or truncation when writing seconds since epoch
-            self.initial_date_var = self.ncfile.createVariable("initial_date", "f8", ("initial_date",), **compression)
+            # Store epoch seconds as int64 to avoid nanosecond overflow in decoders
+            self.initial_date_var = self.ncfile.createVariable("initial_date", "i8", ("initial_date",), **compression)
             self.initial_date_var.units = "seconds since 1970-01-01 00:00:00"
             self.initial_date_var.long_name = "initial_date"
             self.initial_date_var.calendar = "gregorian"
