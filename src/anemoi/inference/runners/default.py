@@ -113,7 +113,6 @@ class DefaultRunner(Runner):
         # This may be used by Output objects to compute the step
         self.lead_time = lead_time
         self.time_step = self.checkpoint.timestep
-
         output = self.create_output()
 
         # Loop over the date range:
@@ -179,7 +178,7 @@ class DefaultRunner(Runner):
                         output.write_state(state)
                     else:
                         raise
-            output.close()
+        output.close()
 
         if "accumulate_from_start_of_forecast" not in self.config.post_processors:
             LOG.warning(
