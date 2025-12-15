@@ -85,7 +85,6 @@ class NetCDFOutput(Output):
         self.missing_value = missing_value
         self.initial_state_date = None
         self.current_initial_date_index = 0  # Track the current initial_date index
-        self._active_initial_date: datetime | None = None
         if self.write_initial_state:
             self.extra_time = 1
         else:
@@ -129,13 +128,10 @@ class NetCDFOutput(Output):
         ):
             time = lead_time // time_step
             time += self.extra_time
-        
-        LOG.info(f"⏰ TIME: {time}")
-        LOG.info(f"⏰ EXTRA TIME: {self.extra_time}")
 
         if reference_date := getattr(self.context, "date", None):
             self.reference_date = reference_date
-        LOG.info(f"🚧🚧🚧🚧🚧🚧 open(): SELF.REFERENCE_DATE: {self.reference_date}")
+
 
         with LOCK:
             # dimensions
@@ -154,7 +150,6 @@ class NetCDFOutput(Output):
             self.initial_date_var.units = f"seconds since {self.reference_date[0]}"
             self.initial_date_var.long_name = "initial_date"
             self.initial_date_var.calendar = "gregorian"
-            LOG.info(f"🚧🚧🚧🚧🚧🚧 open(): INITIAL DATE UNITS: seconds since {self.reference_date[0]}")
 
         # Pre-fill the lead_time values (in hours)
         # lead_times = [(i * time_step).total_seconds() / 3600 for i in range(time)]
@@ -166,7 +161,6 @@ class NetCDFOutput(Output):
         initial_dates = [(x - ref).total_seconds() for x in self.reference_date]
         initial_dates_seconds = np.asarray(initial_dates, dtype=np.int64)
         self.initial_date_var[:] = initial_dates_seconds
-        
 
         LOG.info(f"⏰ LEAD TIMES: {lead_times}")
 
@@ -243,7 +237,7 @@ class NetCDFOutput(Output):
             if (step % self.output_frequency).total_seconds() != 0:
                 return
             
-        LOG.info(f"🚧🚧🚧🚧🚧🚧 write_state(): INITIAL DATE: {initial_date}")
+        # LOG.info(f"🚧🚧🚧🚧🚧🚧 write_state(): INITIAL DATE: {initial_date}")
         return self.write_step(self.post_process(state), initial_date)
 
     def write_step(self, state: State, initial_date: datetime) -> None:
@@ -257,32 +251,10 @@ class NetCDFOutput(Output):
 
         self.ensure_variables(state)
 
-        # Safety checks before writing
-        if self.ncfile is None:
-            LOG.error("NetCDF file is closed; cannot write state")
-            return
-        try:
-            n_init = len(self.initial_date_var)
-        except Exception:
-            n_init = None
-        try:
-            n_lt = len(self.lead_time_var)
-        except Exception:
-            n_lt = None
-        if n_init is not None and self.current_initial_date_index >= n_init:
-            LOG.error("initial_date index %s out of range %s", self.current_initial_date_index, n_init)
-            return
-        if n_lt is not None and self.n >= n_lt:
-            LOG.error("lead_time index %s out of range %s", self.n, n_lt)
-            return
-
         # step = state["date"] - self.reference_date
         # self.time_var[self.n] = step.total_seconds()
 
-        # Write the initial_date only when it changes; keep lead_time counter for the same date
-        if self._active_initial_date != initial_date:
-            self._active_initial_date = initial_date
-            self.n = 0
+        LOG.info(f"🚧🚧 initial_date: {initial_date}, current_initial_date_index: {self.current_initial_date_index}, n: {self.n}")
 
         for name, value in state["fields"].items():
             if self.skip_variable(name):
@@ -290,6 +262,8 @@ class NetCDFOutput(Output):
 
             with LOCK:
                 var = self.vars[name]
+
+                # ensure matching dtype and check expected shape
                 arr = np.ascontiguousarray(value, dtype=var.dtype)
                 expected = len(state["latitudes"])  # equals values dimension length
                 if arr.shape != (expected,):
@@ -300,10 +274,6 @@ class NetCDFOutput(Output):
                         expected,
                     )
                     continue
-
-                LOG.debug(
-                    f"🚧 write {name} at [init={self.current_initial_date_index}, lead={self.n}], shape={arr.shape}"
-                )
                 try:
                     var[self.current_initial_date_index, self.n, :] = arr
                 except Exception:
@@ -315,16 +285,11 @@ class NetCDFOutput(Output):
                     )
                     continue
 
-                try:
-                    self.ncfile.sync()
-                except Exception:
-                    LOG.debug("sync() failed; continuing")
-
         self.n += 1
-        if self.n >= len(self.lead_time_var):
+        
+        if self.n == len(self.lead_time_var):
             self.n = 0
             self.current_initial_date_index += 1
-            self._active_initial_date = None
 
     def close(self) -> None:
         """Close the NetCDF file."""
