@@ -254,7 +254,7 @@ class NetCDFOutput(Output):
         # step = state["date"] - self.reference_date
         # self.time_var[self.n] = step.total_seconds()
 
-        LOG.info(f"🚧🚧 initial_date: {initial_date}, current_initial_date_index: {self.current_initial_date_index}, n: {self.n}")
+        LOG.info(f"🚧🚧 PID={os.getpid()}, initial_date: {initial_date}, current_initial_date_index: {self.current_initial_date_index}, n: {self.n}")
 
         for name, value in state["fields"].items():
             if self.skip_variable(name):
