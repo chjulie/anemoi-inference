@@ -118,7 +118,6 @@ class DefaultRunner(Runner):
         # Loop over the date range:
         for initial_date in self.config.date:
             LOG.info(f"☔️ INFO: initial state date: {initial_date}")
-            # TODO: add dims in output for lead_time
 
             # In case the constant forcings are from another input, combine them here
             # So that they are in considered in the `write_initial_state`

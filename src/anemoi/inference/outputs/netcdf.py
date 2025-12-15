@@ -237,7 +237,7 @@ class NetCDFOutput(Output):
             if (step % self.output_frequency).total_seconds() != 0:
                 return
             
-        # LOG.info(f"🚧🚧🚧🚧🚧🚧 write_state(): INITIAL DATE: {initial_date}")
+
         return self.write_step(self.post_process(state), initial_date)
 
     def write_step(self, state: State, initial_date: datetime) -> None:
@@ -250,11 +250,6 @@ class NetCDFOutput(Output):
         """
 
         self.ensure_variables(state)
-
-        # step = state["date"] - self.reference_date
-        # self.time_var[self.n] = step.total_seconds()
-
-        LOG.info(f"🚧🚧 PID={os.getpid()}, initial_date: {initial_date}, current_initial_date_index: {self.current_initial_date_index}, n: {self.n}")
 
         for name, value in state["fields"].items():
             if self.skip_variable(name):
