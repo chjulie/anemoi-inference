@@ -32,6 +32,8 @@ from anemoi.inference.types import BoolArray
 from anemoi.inference.types import FloatArray
 from anemoi.inference.types import State
 
+from anemoi.datasets.data import MissingDateError
+
 from .checkpoint import Checkpoint
 from .context import Context
 from .precisions import PRECISIONS
@@ -269,7 +271,7 @@ class Runner(Context):
 
             try:
                 yield from self.prepare_output_state(self.forecast(lead_time, input_tensor, input_state), return_numpy)
-            except (TypeError, ModuleNotFoundError, AttributeError):
+            except (TypeError, ModuleNotFoundError, AttributeError, MissingDateError):
                 self.checkpoint.report_error()
                 raise
 
